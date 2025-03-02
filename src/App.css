@@ -18,10 +18,11 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 2000px;
   margin: 0 auto;
   padding: 20px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -36,42 +37,198 @@ h1 {
   padding: 15px;
   margin-top: 20px;
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
+  table-layout: fixed;
+  white-space: nowrap;
 }
 
 th, td {
-  padding: 12px;
+  padding: 8px 6px;
   text-align: left;
-  border-bottom: 1px solid #404040;
+  border: 1px solid #404040;
+  white-space: normal;
+  vertical-align: middle;
+  line-height: 1.2;
+  font-size: 0.85em;
 }
 
 th {
-  background-color: #404040;
-  color: #e0e0e0;
+  background-color: #1565C0;
+  color: white;
+  font-weight: bold;
+  border-bottom: 2px solid #0D47A1;
+  padding: 12px 6px;
+}
+
+tr:nth-child(odd) {
+  background-color: #262626;
+}
+
+tr:nth-child(even) {
+  background-color: #383838;
 }
 
 tr:hover {
-  background-color: #363636;
+  background-color: #454545;
+  transition: background-color 0.2s ease;
+}
+
+td {
+  color: #e0e0e0;
+  border-right: 1px solid #404040;
+}
+
+td:last-child {
+  border-right: none;
+}
+
+/* Estilo para células com texto longo */
+td {
+  position: relative;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mostra o texto completo ao passar o mouse em um tooltip */
+td:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background-color: #2d2d2d;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  white-space: normal;
+  min-width: 200px;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+/* Ajustes específicos para cada coluna */
+th:nth-child(1), td:nth-child(1) { /* ID */
+  width: 40px;
+  min-width: 40px;
+  text-align: center;
+}
+
+th:nth-child(2), td:nth-child(2) { /* Item */
+  width: 200px;
+  min-width: 200px;
+}
+
+th:nth-child(3), td:nth-child(3) { /* QTD */
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+}
+
+th:nth-child(4), td:nth-child(4) { /* Fornecedor */
+  width: 120px;
+  min-width: 120px;
+}
+
+th:nth-child(5), td:nth-child(5) { /* Solicitante */
+  width: 120px;
+  min-width: 120px;
+}
+
+th:nth-child(6), td:nth-child(6) { /* Motivo */
+  width: 150px;
+  min-width: 150px;
+}
+
+th:nth-child(7), td:nth-child(7),
+th:nth-child(8), td:nth-child(8),
+th:nth-child(9), td:nth-child(9) { /* Datas e Ações */
+  width: 100px;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Estilo para células com texto longo */
+td {
+  position: relative;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mostra o texto completo ao passar o mouse */
+td:hover {
+  overflow: visible;
+  white-space: normal;
+  z-index: 1;
+}
+
+td:hover span {
+  background-color: #2d2d2d;
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+/* Estilo para os botões de ação */
+td:last-child button {
+  margin: 0 5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+/* Cores específicas para cada botão */
+button.solicitar {
+  background-color: #4CAF50;
+  color: white;
+}
+
+button.baixar {
+  background-color: #2196F3;
+  color: white;
+}
+
+button.deletar {
+  background-color: #f44336;
+  color: white;
 }
 
 .new-button {
+  display: inline-block;
+  margin: 20px auto;
+  text-align: center;
+  width: fit-content;
+  padding: 10px 20px;
   background-color: #2196F3;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: all 0.2s ease;
   font-size: 14px;
-  transition: background-color 0.3s;
 }
 
 .new-button:hover {
   background-color: #1976D2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
 .modal-overlay {
@@ -92,11 +249,20 @@ tr:hover {
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
+  position: relative;
 }
 
 .modal h2 {
   color: #e0e0e0;
   margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal p {
+  color: #e0e0e0;
+  margin-bottom: 20px;
+  text-align: center;
+  line-height: 1.5;
 }
 
 .form-group {
@@ -121,17 +287,19 @@ tr:hover {
 
 .modal-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: center;
+  gap: 15px;
   margin-top: 20px;
 }
 
 .modal-buttons button {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  min-width: 120px;
 }
 
 .modal-buttons button:first-child {
@@ -139,17 +307,54 @@ tr:hover {
   color: white;
 }
 
+.modal-buttons button:first-child:hover {
+  background-color: #1976D2;
+  transform: translateY(-1px);
+}
+
 .modal-buttons button:last-child {
   background-color: #666;
   color: white;
 }
 
-.modal-buttons button:hover {
-  opacity: 0.9;
+.modal-buttons button:last-child:hover {
+  background-color: #555;
+  transform: translateY(-1px);
 }
 
 .report-controls {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.report-controls button {
+  margin: 0;
+  padding: 8px 16px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 40px;
+}
+
+.pdf-text {
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.report-controls button:hover {
+  background-color: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
 .date-filters {
@@ -289,13 +494,12 @@ th {
 }
 
 .table-container {
-  overflow-x: auto;
-  background-color: #2d2d2d;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  margin: 0 auto;
-  max-width: 100%;
+  margin: 20px 0;
   padding: 0;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
 }
 
 table {
@@ -327,60 +531,14 @@ tr:hover {
   background-color: #404040;
 }
 
-/* Definindo larguras fixas para as colunas */
-th:nth-child(1), td:nth-child(1) { 
-  width: 5%; 
-  min-width: 45px;
-} /* ID */
-
-th:nth-child(2), td:nth-child(2) { 
-  width: 15%; 
-  min-width: 150px;
-} /* Item */
-
-th:nth-child(3), td:nth-child(3) { 
-  width: 5%; 
-  min-width: 45px;
-} /* Qtd */
-
-th:nth-child(4), td:nth-child(4) { 
-  width: 8%; 
-  min-width: 85px;
-} /* Registro */
-
-th:nth-child(5), td:nth-child(5) { 
-  width: 8%; 
-  min-width: 85px;
-} /* Solicitação */
-
-th:nth-child(6), td:nth-child(6) { 
-  width: 12%; 
-  min-width: 110px;
-} /* Solicitante */
-
-th:nth-child(7), td:nth-child(7) { 
-  width: 27%; 
-  min-width: 180px;
-} /* Fornecedor */
-
-th:nth-child(8), td:nth-child(8) { 
-  width: 10%; 
-  min-width: 110px;
-} /* Status */
-
-th:nth-child(9), td:nth-child(9) { 
-  width: 10%; 
-  min-width: 110px;
-} /* Ação */
-
 .status {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   text-align: center;
-  min-width: 90px;
+  min-width: 70px;
   max-width: 100%;
   margin: 0 auto;
 }
@@ -401,14 +559,14 @@ th:nth-child(9), td:nth-child(9) {
 }
 
 .action-button {
-  padding: 6px 10px;
+  padding: 4px 8px;
   border: none;
   border-radius: 16px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   transition: all 0.2s ease;
-  min-width: 90px;
+  min-width: 70px;
   max-width: 100%;
   white-space: nowrap;
   display: inline-block;
@@ -618,9 +776,7 @@ td a {
 }
 
 /* Remove a seleção de texto dos botões e status */
-td:nth-child(8), /* Status */
 td:nth-child(9), /* Ação */
-.status,
 .action-button {
   user-select: none;
   cursor: default;
@@ -644,15 +800,16 @@ td a,
   color: #888;
   border: none;
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 24px;
   height: 24px;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .delete-button:hover {
@@ -661,12 +818,15 @@ td a,
   transform: translateY(-1px);
 }
 
-.report-controls {
-  margin-bottom: 20px;
-  padding: 15px;
-  border-radius: 8px;
-  background-color: #2d2d2d;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.delete-button .material-icons {
+  font-size: 18px;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
 }
 
 .date-filters {
@@ -777,4 +937,155 @@ td a,
   background-color: #2196F3;
   border-color: #2196F3;
   color: white;
+}
+
+.modal .form-group {
+  margin-bottom: 15px;
+}
+
+.modal .form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.modal .form-group input[type="date"] {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  background-color: #333333;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  color: #e0e0e0;
+}
+
+.modal .form-group input[type="date"]:focus {
+  border-color: #2196F3;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.modal p {
+  margin: 15px 0;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-buttons button[type="submit"] {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+}
+
+.modal-buttons button[type="submit"]:hover:not(:disabled) {
+  background-color: #1976D2;
+  transform: translateY(-1px);
+}
+
+.modal-buttons button[type="button"] {
+  background-color: transparent;
+  color: #e0e0e0;
+  border: 1px solid #404040;
+}
+
+.modal-buttons button[type="button"]:hover:not(:disabled) {
+  background-color: #404040;
+}
+
+/* Estilo para o scroll horizontal */
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+.react-tabs {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.react-tabs__tab-list {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: none;
+  margin-bottom: 20px;
+}
+
+.react-tabs__tab {
+  padding: 10px 30px;
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.react-tabs__tab:hover {
+  background-color: #383838;
+  transform: translateY(-1px);
+}
+
+.react-tabs__tab--selected {
+  background-color: #2196F3 !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+table thead th {
+  background-color: #2196F3;
+  color: white;
+  padding: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none;
+  border-bottom: 2px solid #1976D2;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+table thead th:hover {
+  background-color: #1976D2;
+}
+
+table thead tr {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

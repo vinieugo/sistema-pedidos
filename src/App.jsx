@@ -5,6 +5,8 @@ import './App.css';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Modal from 'react-modal';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   getPedidos, 
   criarPedido, 
@@ -28,6 +30,7 @@ function App() {
   const [paginaHistorico, setPaginaHistorico] = useState(1);
   const [totalPaginasHistorico, setTotalPaginasHistorico] = useState(1);
   const [carregando, setCarregando] = useState(false);
+  const [etapaAtual, setEtapaAtual] = useState(0);
 
   const [novoPedido, setNovoPedido] = useState({
     nomeItem: '',
@@ -37,6 +40,17 @@ function App() {
     motivo: ''
   });
 
+  const [dataInicialRelatorio, setDataInicialRelatorio] = useState('');
+  const [dataFinalRelatorio, setDataFinalRelatorio] = useState('');
+
+  const etapas = [
+    { campo: 'nomeItem', label: 'Nome do Item', tipo: 'text' },
+    { campo: 'quantidade', label: 'Quantidade', tipo: 'number' },
+    { campo: 'solicitante', label: 'Solicitante', tipo: 'text' },
+    { campo: 'fornecedor', label: 'Fornecedor', tipo: 'text' },
+    { campo: 'motivo', label: 'Motivo', tipo: 'textarea' }
+  ];
+
   useEffect(() => {
     carregarPedidos();
     carregarHistorico();
@@ -45,7 +59,7 @@ function App() {
   const carregarPedidos = async () => {
     try {
       setCarregando(true);
-      const response = await getPedidos(paginaAtual, 'A Solicitar');
+      const response = await getPedidos(paginaAtual, ['A Solicitar', 'Solicitado']);
       setPedidosAtivos(response.pedidos);
       setTotalPaginas(response.pages);
     } catch (error) {
@@ -58,13 +72,24 @@ function App() {
   const carregarHistorico = async () => {
     try {
       setCarregando(true);
-      const response = await getPedidos(paginaHistorico, null, dataInicial, dataFinal);
+      const response = await getPedidos(paginaHistorico, 'Baixado', dataInicial, dataFinal);
       setHistoricoPedidos(response.pedidos);
       setTotalPaginasHistorico(response.pages);
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
     } finally {
       setCarregando(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (etapaAtual < etapas.length - 1) {
+        setEtapaAtual(etapaAtual + 1);
+      } else {
+        handleSubmit(e);
+      }
     }
   };
 
@@ -80,6 +105,7 @@ function App() {
         fornecedor: '',
         motivo: ''
       });
+      setEtapaAtual(0);
       carregarPedidos();
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
@@ -123,19 +149,89 @@ function App() {
     }
   };
 
-  const gerarRelatorio = async () => {
+  const formatarData = (data) => {
+    if (!data) return '-';
     try {
-      await arquivarPedidosAntigos();
-      carregarHistorico();
-      setModalRelatorioAberto(false);
+      return format(new Date(data), 'dd/MM/yyyy HH:mm', { locale: ptBR });
     } catch (error) {
-      console.error('Erro ao gerar relatório:', error);
+      console.error('Erro ao formatar data:', error);
+      return '-';
     }
   };
 
-  const formatarData = (data) => {
-    if (!data) return '';
-    return format(new Date(data), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+  const gerarRelatorio = async () => {
+    try {
+      const response = await getPedidos(1, 'Baixado', dataInicialRelatorio, dataFinalRelatorio);
+      const pedidos = response.pedidos;
+
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text('Relatório de Pedidos Baixados', 14, 20);
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 14, 30);
+
+      if (dataInicialRelatorio && dataFinalRelatorio) {
+        doc.text(`Período: ${format(new Date(dataInicialRelatorio), 'dd/MM/yyyy')} até ${format(new Date(dataFinalRelatorio), 'dd/MM/yyyy')}`, 14, 35);
+      }
+
+      const limitarTexto = (texto, limite) => {
+        if (!texto) return '-';
+        return texto.length > limite ? texto.substring(0, limite) + '...' : texto;
+      };
+
+      const tableData = pedidos.map(pedido => {
+        return [
+          pedido.id || '-',
+          limitarTexto(pedido.nomeItem, 30),
+          pedido.quantidade || '-',
+          limitarTexto(pedido.fornecedor, 20),
+          limitarTexto(pedido.solicitante, 20),
+          pedido.dataPreenchimento ? format(new Date(pedido.dataPreenchimento), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-',
+          pedido.dataSolicitacao ? format(new Date(pedido.dataSolicitacao), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-',
+          pedido.dataBaixa ? format(new Date(pedido.dataBaixa), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-'
+        ];
+      });
+
+      autoTable(doc, {
+        startY: dataInicialRelatorio && dataFinalRelatorio ? 40 : 35,
+        head: [['ID', 'Item', 'QTD', 'Fornecedor', 'Solicitante', 'Data Reg.', 'Data Solic.', 'Data Baixa']],
+        body: tableData,
+        theme: 'grid',
+        styles: { 
+          fontSize: 7,
+          cellPadding: 2,
+          overflow: 'linebreak',
+          cellWidth: 'wrap',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 10 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 },
+          6: { cellWidth: 25 },
+          7: { cellWidth: 25 }
+        },
+        headStyles: { 
+          fillColor: [33, 150, 243],
+          fontSize: 7,
+          halign: 'center'
+        },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 10, right: 10 }
+      });
+
+      doc.save('relatorio-pedidos-baixados.pdf');
+      
+      setModalRelatorioAberto(false);
+      setDataInicialRelatorio('');
+      setDataFinalRelatorio('');
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+    }
   };
 
   const renderPaginacao = (pagina, totalPaginas, setPagina) => {
@@ -173,42 +269,44 @@ function App() {
               <table>
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Item</th>
-                    <th>Quantidade</th>
-                    <th>Solicitante</th>
+                    <th>QTD</th>
                     <th>Fornecedor</th>
+                    <th>Solicitante</th>
                     <th>Motivo</th>
-                    <th>Status</th>
-                    <th>Data Preenchimento</th>
-                    <th>Data Solicitação</th>
+                    <th>Data Reg.</th>
+                    <th>Data Solic.</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pedidosAtivos.map((pedido) => (
                     <tr key={pedido.id}>
-                      <td>{pedido.nomeItem}</td>
+                      <td>{pedido.id}</td>
+                      <td title={pedido.nomeItem}>{pedido.nomeItem}</td>
                       <td>{pedido.quantidade}</td>
-                      <td>{pedido.solicitante}</td>
-                      <td>{pedido.fornecedor}</td>
-                      <td>{pedido.motivo}</td>
-                      <td>{pedido.status}</td>
+                      <td title={pedido.fornecedor}>{pedido.fornecedor}</td>
+                      <td title={pedido.solicitante}>{pedido.solicitante}</td>
+                      <td title={pedido.motivo}>{pedido.motivo}</td>
                       <td>{formatarData(pedido.dataPreenchimento)}</td>
                       <td>{formatarData(pedido.dataSolicitacao)}</td>
                       <td>
-                        {pedido.status === 'A Solicitar' && (
-                          <button onClick={() => handleSolicitar(pedido)}>
-                            Solicitar
+                        <div className="action-buttons">
+                          {pedido.status === 'A Solicitar' && (
+                            <button className="action-button orange" onClick={() => handleSolicitar(pedido)}>
+                              Solicitar
+                            </button>
+                          )}
+                          {pedido.status === 'Solicitado' && (
+                            <button className="action-button green" onClick={() => handleBaixar(pedido)}>
+                              Baixar
+                            </button>
+                          )}
+                          <button className="delete-button" onClick={() => handleDeletar(pedido.id)}>
+                            ×
                           </button>
-                        )}
-                        {pedido.status === 'Solicitado' && (
-                          <button onClick={() => handleBaixar(pedido)}>
-                            Baixar
-                          </button>
-                        )}
-                        <button onClick={() => handleDeletar(pedido.id)}>
-                          Deletar
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -221,7 +319,7 @@ function App() {
           <TabPanel>
             <div className="report-controls">
               <button onClick={() => setModalRelatorioAberto(true)}>
-                Gerar Relatório
+                <span className="pdf-text">PDF</span>
               </button>
             </div>
 
@@ -229,12 +327,12 @@ function App() {
               <table>
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Item</th>
                     <th>Quantidade</th>
                     <th>Solicitante</th>
                     <th>Fornecedor</th>
                     <th>Motivo</th>
-                    <th>Status</th>
                     <th>Data Preenchimento</th>
                     <th>Data Solicitação</th>
                     <th>Data Baixa</th>
@@ -243,12 +341,12 @@ function App() {
                 <tbody>
                   {historicoPedidos.map((pedido) => (
                     <tr key={pedido.id}>
-                      <td>{pedido.nomeItem}</td>
+                      <td>{pedido.id}</td>
+                      <td title={pedido.nomeItem}>{pedido.nomeItem}</td>
                       <td>{pedido.quantidade}</td>
-                      <td>{pedido.solicitante}</td>
-                      <td>{pedido.fornecedor}</td>
-                      <td>{pedido.motivo}</td>
-                      <td>{pedido.status}</td>
+                      <td title={pedido.solicitante}>{pedido.solicitante}</td>
+                      <td title={pedido.fornecedor}>{pedido.fornecedor}</td>
+                      <td title={pedido.motivo}>{pedido.motivo}</td>
                       <td>{formatarData(pedido.dataPreenchimento)}</td>
                       <td>{formatarData(pedido.dataSolicitacao)}</td>
                       <td>{formatarData(pedido.dataBaixa)}</td>
@@ -263,68 +361,96 @@ function App() {
 
         <Modal
           isOpen={modalAberto}
-          onRequestClose={() => setModalAberto(false)}
+          onRequestClose={() => {
+            setModalAberto(false);
+            setEtapaAtual(0);
+            setNovoPedido({
+              nomeItem: '',
+              quantidade: '',
+              solicitante: '',
+              fornecedor: '',
+              motivo: ''
+            });
+          }}
           className="modal"
           overlayClassName="modal-overlay"
         >
           <h2>Novo Pedido</h2>
+          <div className="form-progress">
+            Etapa {etapaAtual + 1} de {etapas.length}
+          </div>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Item:</label>
+              <label>{etapas[etapaAtual].label}:</label>
+              {etapas[etapaAtual].tipo === 'textarea' ? (
+                <textarea
+                  value={novoPedido[etapas[etapaAtual].campo]}
+                onChange={(e) =>
+                    setNovoPedido({
+                      ...novoPedido,
+                      [etapas[etapaAtual].campo]: e.target.value
+                    })
+                }
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+              />
+              ) : (
               <input
-                type="text"
-                value={novoPedido.nomeItem}
+                  type={etapas[etapaAtual].tipo}
+                  value={novoPedido[etapas[etapaAtual].campo]}
                 onChange={(e) =>
-                  setNovoPedido({ ...novoPedido, nomeItem: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Quantidade:</label>
-              <input
-                type="number"
-                value={novoPedido.quantidade}
-                onChange={(e) =>
-                  setNovoPedido({ ...novoPedido, quantidade: Number(e.target.value) })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Solicitante:</label>
-              <input
-                type="text"
-                value={novoPedido.solicitante}
-                onChange={(e) =>
-                  setNovoPedido({ ...novoPedido, solicitante: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Fornecedor:</label>
-              <input
-                type="text"
-                value={novoPedido.fornecedor}
-                onChange={(e) =>
-                  setNovoPedido({ ...novoPedido, fornecedor: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Motivo:</label>
-              <textarea
-                value={novoPedido.motivo}
-                onChange={(e) =>
-                  setNovoPedido({ ...novoPedido, motivo: e.target.value })
-                }
-              />
+                    setNovoPedido({
+                      ...novoPedido,
+                      [etapas[etapaAtual].campo]: etapas[etapaAtual].tipo === 'number' 
+                        ? Number(e.target.value) 
+                        : e.target.value
+                    })
+                  }
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+                  required={etapas[etapaAtual].campo !== 'motivo'}
+                />
+              )}
             </div>
             <div className="modal-buttons">
-              <button type="submit">Salvar</button>
-              <button type="button" onClick={() => setModalAberto(false)}>
+              {etapaAtual > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setEtapaAtual(etapaAtual - 1)}
+                >
+                  Anterior
+                </button>
+              )}
+              {etapaAtual < etapas.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setEtapaAtual(etapaAtual + 1)}
+                  disabled={!novoPedido[etapas[etapaAtual].campo] && etapas[etapaAtual].campo !== 'motivo'}
+                >
+                  Próximo
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!novoPedido.nomeItem || !novoPedido.quantidade || !novoPedido.solicitante || !novoPedido.fornecedor}
+                >
+                  Salvar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setModalAberto(false);
+                  setEtapaAtual(0);
+                  setNovoPedido({
+                    nomeItem: '',
+                    quantidade: '',
+                    solicitante: '',
+                    fornecedor: '',
+                    motivo: ''
+                  });
+                }}
+              >
                 Cancelar
               </button>
             </div>
@@ -338,27 +464,30 @@ function App() {
           overlayClassName="modal-overlay"
         >
           <h2>Gerar Relatório</h2>
-          <div className="date-filters">
-            <div className="filter-group">
-              <label>Data Inicial:</label>
-              <input
-                type="date"
-                value={dataInicial}
-                onChange={(e) => setDataInicial(e.target.value)}
-              />
-            </div>
-            <div className="filter-group">
-              <label>Data Final:</label>
-              <input
-                type="date"
-                value={dataFinal}
-                onChange={(e) => setDataFinal(e.target.value)}
-              />
-            </div>
+          <div className="form-group">
+            <label>Data Inicial:</label>
+            <input
+              type="date"
+              value={dataInicialRelatorio}
+              onChange={(e) => setDataInicialRelatorio(e.target.value)}
+            />
           </div>
+          <div className="form-group">
+            <label>Data Final:</label>
+            <input
+              type="date"
+              value={dataFinalRelatorio}
+              onChange={(e) => setDataFinalRelatorio(e.target.value)}
+            />
+          </div>
+          <p>Selecione o período para gerar o relatório. Se nenhuma data for selecionada, todos os pedidos serão incluídos.</p>
           <div className="modal-buttons">
             <button onClick={gerarRelatorio}>Gerar PDF</button>
-            <button onClick={() => setModalRelatorioAberto(false)}>
+            <button onClick={() => {
+              setModalRelatorioAberto(false);
+              setDataInicialRelatorio('');
+              setDataFinalRelatorio('');
+            }}>
               Cancelar
             </button>
           </div>

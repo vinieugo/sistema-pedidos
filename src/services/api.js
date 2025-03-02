@@ -1,13 +1,13 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+  baseURL: 'http://localhost:8081/api'
 });
 
 export const getPedidos = async (page = 1, status = null, dataInicial = null, dataFinal = null) => {
   const params = { 
-    page, 
-    ...(status && { status }),
+    page,
+    ...(Array.isArray(status) ? { status: status.join(',') } : status ? { status } : {}),
     ...(dataInicial && { dataInicial }),
     ...(dataFinal && { dataFinal })
   };

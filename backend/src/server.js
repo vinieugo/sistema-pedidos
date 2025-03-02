@@ -15,10 +15,14 @@ app.use(cors({
 
 app.use(express.json());
 
-// Middleware para tratamento de erros
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Erro interno do servidor' });
+// Rota para favicon.ico
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No Content
+});
+
+// Rota raiz
+app.get('/', (req, res) => {
+  res.json({ message: 'API do Sistema de Pedidos' });
 });
 
 // Rotas para pedidos
@@ -37,7 +41,9 @@ app.get('/api/pedidos', async (req, res) => {
     
     const where = {
       arquivado,
-      ...(status && { status }),
+      ...(status && {
+        status: status.includes(',') ? { in: status.split(',') } : status
+      }),
       ...(dataInicial && dataFinal && {
         dataPreenchimento: {
           gte: new Date(dataInicial),
@@ -167,8 +173,19 @@ app.put('/api/configuracoes', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-const HOST = process.env.HOST || '0.0.0.0';
+// Middleware para rotas não encontradas (404) - DEVE VIR DEPOIS DE TODAS AS ROTAS
+app.use((req, res) => {
+  res.status(404).json({ error: 'Rota não encontrada' });
+});
+
+// Middleware para tratamento de erros - DEVE SER O ÚLTIMO
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Erro interno do servidor' });
+});
+
+const PORT = process.env.PORT || 8081;
+const HOST = process.env.HOST || 'localhost';
 
 app.listen(PORT, HOST, () => {
   console.log(`Servidor rodando em http://${HOST}:${PORT}`);
